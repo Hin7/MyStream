@@ -2,17 +2,23 @@ package ru.sbt.MyStream;
 /**
  * MyStream - своя реализация класса, похожего на Stream.
  * Урок 10 СБТ. Lambda, Stream API.
- *
+ * <p>
  * Куда "всунуть" параметризацию по PECS не очень понял.
+ *
+ * После лекции Еськова Андрея, где он обратил внимание на наличие набора стандартных функциональных интерфейсов,
+ * убрал использование своих MyPredicate, MyTransformer и MyFunction. /18/05/2020/
  *
  * @author - Hin7
  * @version - 1.1 07/04/2020
+ * @version - 1.2 18/05/2020
  */
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class MyStream<T> {
 
@@ -35,7 +41,7 @@ public class MyStream<T> {
      * @param predicate - задаваемое условие для фильтрации
      * @return - возвращает себя.
      */
-    public MyStream<T> filter(MyPredicate<T> predicate) {
+    public MyStream<T> filter(Predicate<T> predicate) {
         actionList.add(predicate);
         return this;
     }
@@ -46,7 +52,7 @@ public class MyStream<T> {
      * @param transformer - задаваемая операция трансформации
      * @return - возвращает сам себя.
      */
-    public MyStream<T> transform(MyTransformer<T> transformer) {
+    public MyStream<T> transform(Function<T, T> transformer) {
         actionList.add(transformer);
         return this;
     }
@@ -56,14 +62,14 @@ public class MyStream<T> {
      * @param item - элемент колекции
      * @return - преобразованный элемент коллекции или null, если элемент не прошел условие при фильтрации
      */
-    private T executeActionsOnItem(T item){
+    private T executeActionsOnItem(T item) {
         T newItem = item;
-        for (Object act : actionList){
-            if(act instanceof MyPredicate){
-                if(!((MyPredicate<T>)act).test((newItem)))
+        for (Object act : actionList) {
+            if (act instanceof Predicate) {
+                if (!((Predicate<T>) act).test((newItem)))
                     return null;
-            } else if(act instanceof MyTransformer)
-                newItem = ((MyTransformer<T>)act).transform(newItem);
+            } else if (act instanceof Function)
+                newItem = ((Function<T, T>) act).apply(newItem);
         }
         return newItem;
     }
@@ -93,11 +99,11 @@ public class MyStream<T> {
      * @param <V> - тип значения Map
      * @return - Map из преобразованного листа
      */
-    public <K, V> Map<K, V> toMap(MyFunction<T, K> itemToKey, MyFunction<T, V> itemToVal){
+    public <K, V> Map<K, V> toMap(Function<T, K> itemToKey, Function<T, V> itemToVal) {
         Map<K, V> result = new HashMap<>();
-        for (T item : dataList){
+        for (T item : dataList) {
             T newItem = executeActionsOnItem(item);
-            if(newItem != null)
+            if (newItem != null)
                 result.put(itemToKey.apply(newItem), itemToVal.apply(newItem));
         }
         actionList.clear();
